@@ -7,7 +7,7 @@ import time
 TMDB_USERNAME = 'your_username'
 TMDB_PASSWORD = 'your_password'
 DATA_FILE_PATH = '/path/to/episodes.txt'
-ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/2/edit?active_nav_item=episodes'
+ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/6/edit?active_nav_item=episodes'
 LANGUAGE_CODE = 'en-US'
 
 try:
@@ -26,7 +26,7 @@ try:
 
     driver.get(ADD_EPISODES_URL)
 
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.XPATH, '//*[@id="grid"]/div[3]/table/tbody/tr[1]/td[1]')))
+    time.sleep(3)
 
     existing_episode_numbers = []
     for i in range(1, 1000):
@@ -35,17 +35,20 @@ try:
         if not episode_elements:
             break
         existing_episode_numbers.append(int(episode_elements[0].text))
+    
+    if not existing_episode_numbers:
+        filtered_data = data
+    else:
+        existing_episodes_in_file = [int(line.strip().split(';')[0]) for line in data]
+        common_episodes = list(set(existing_episode_numbers) & set(existing_episodes_in_file))
+        print(f'Episodes already exist: {common_episodes}')
+        print()
 
-    existing_episodes_in_file = [int(line.strip().split(';')[0]) for line in data]
-    common_episodes = list(set(existing_episode_numbers) & set(existing_episodes_in_file))
-    print(f'Episodes already exist: {common_episodes}')
-    print()
-
-    filtered_data = []
-    for line in data:
-        episode_number = int(line.strip().split(';')[0])
-        if episode_number not in existing_episode_numbers:
-            filtered_data.append(line)
+        filtered_data = []
+        for line in data:
+            episode_number = int(line.strip().split(';')[0])
+            if episode_number not in existing_episode_numbers:
+                filtered_data.append(line)
 
     successful_lines = []
     failed_lines = []
@@ -111,6 +114,15 @@ try:
     
     print(f'Total added: {len(successful_lines)}')
     print(f'Total failed: {len(failed_lines)}')
+    
+    if failed_lines:
+        failed_episodes_str = 'Failed episodes:'
+        for index in failed_lines:
+            line = filtered_data[index]
+            episode_number = line.strip().split(';')[0]
+            failed_episodes_str += f' {episode_number}'
+        print()
+        print(failed_episodes_str)
 
 except Exception as e:
     print(f'Unknown error')
