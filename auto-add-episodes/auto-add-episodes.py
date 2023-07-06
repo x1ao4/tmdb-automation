@@ -7,7 +7,7 @@ import time
 TMDB_USERNAME = 'your_username'
 TMDB_PASSWORD = 'your_password'
 DATA_FILE_PATH = '/path/to/episodes.txt'
-ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/0/edit?active_nav_item=episodes'
+ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/2/edit?active_nav_item=episodes'
 LANGUAGE_CODE = 'en-US'
 
 try:
@@ -39,6 +39,7 @@ try:
     existing_episodes_in_file = [int(line.strip().split(';')[0]) for line in data]
     common_episodes = list(set(existing_episode_numbers) & set(existing_episodes_in_file))
     print(f'Episodes already exist: {common_episodes}')
+    print()
 
     filtered_data = []
     for line in data:
@@ -47,10 +48,11 @@ try:
             filtered_data.append(line)
 
     successful_lines = []
+    failed_lines = []
+    
     for index, line in enumerate(filtered_data):
         try:
-            episode_number, date, duration, topic, description = line.strip().split(';')
-            print(f'Processing episode {episode_number}')
+            episode_number, date, duration, topic, description = line.strip().split(';', maxsplit=4)
 
             driver.find_element(By.XPATH, '//*[@id="grid"]/div[1]/a').click()
 
@@ -68,7 +70,9 @@ try:
                     decrease_button.click()
 
             driver.find_element(By.XPATH, f'//*[@id="{LANGUAGE_CODE}_name_text_input_field"]').send_keys(topic)
-
+            
+            time.sleep(1)
+            
             driver.find_element(By.XPATH, f'//*[@id="{LANGUAGE_CODE}_overview_text_box_field"]').send_keys(description)
 
             air_date_field = driver.find_element(By.XPATH, '//*[@id="air_date_date_picker_field"]')
@@ -93,16 +97,22 @@ try:
 
         except Exception as e:
             error_message = str(e).split('\n')[0]
+            failed_lines.append(index)
+            
             if index != 0:
-                print(f'Error: {error_message}')
                 print(f'Failed to add episode: {episode_number}')
 
             
     with open(DATA_FILE_PATH, 'w') as file:
         for line in data:
             file.write(line)
+    
+    print()
+    
+    print(f'Total added: {len(successful_lines)}')
+    print(f'Total failed: {len(failed_lines)}')
 
 except Exception as e:
-    print(f'Error: {e}')
+    print(f'Unknown error')
 
 driver.quit()
