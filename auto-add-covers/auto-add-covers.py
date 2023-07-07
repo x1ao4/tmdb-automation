@@ -109,9 +109,10 @@ try:
         language_option.click()
         
         time.sleep(1)
-    
-    print(f'Total success: {success_count}')
-    print(f'Total failure: {failure_count}')
+        
+    print()
+    print(f'Total uploaded: {success_count}')
+    print(f'Total failed: {failure_count}')
 
 except Exception as e:
     print(f'Error: {e}')
