@@ -7,7 +7,7 @@ import time
 TMDB_USERNAME = 'your_username'
 TMDB_PASSWORD = 'your_password'
 DATA_FILE_PATH = '/path/to/episodes.txt'
-ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/6/edit?active_nav_item=episodes'
+ADD_EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/8/edit?active_nav_item=episodes'
 LANGUAGE_CODE = 'en-US'
 
 try:
@@ -43,6 +43,16 @@ try:
         common_episodes = list(set(existing_episode_numbers) & set(existing_episodes_in_file))
         print(f'Episodes already exist: {common_episodes}')
         print()
+        
+        for episode_number in common_episodes:
+            for line in data:
+                if line.startswith(f'{episode_number};'):
+                    data.remove(line)
+                    break
+
+        with open(DATA_FILE_PATH, 'w') as file:
+            for line in data:
+                file.write(line)
 
         filtered_data = []
         for line in data:
@@ -61,8 +71,9 @@ try:
 
             WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.k-formatted-value')))
 
+            target_episode_number = int(episode_number)
             current_episode_number = int(driver.find_element(By.CSS_SELECTOR, '.k-formatted-value').get_attribute('aria-valuenow'))
-            clicks_needed = int(episode_number) - current_episode_number
+            clicks_needed = target_episode_number - current_episode_number
             if clicks_needed > 0:
                 for _ in range(clicks_needed):
                     increase_button = driver.find_element(By.CSS_SELECTOR, '.k-link-increase')
@@ -91,12 +102,11 @@ try:
 
             successful_lines.append(index)
             
-            if index != 0:
-                print(f'Successfully added episode: {episode_number}')
-                data.remove(line)
-                with open(DATA_FILE_PATH, 'w') as file:
-                    for line in data:
-                        file.write(line)
+            print(f'Successfully added episode: {episode_number}')
+            data.remove(line)
+            with open(DATA_FILE_PATH, 'w') as file:
+                for line in data:
+                    file.write(line)
 
         except Exception as e:
             error_message = str(e).split('\n')[0]
