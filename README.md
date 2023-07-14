@@ -93,7 +93,7 @@ tmdb-automation is a tool that automates the process of adding TV show episodes 
 - Make sure you have a stable internet connection and can access the TMDB website.
 - Ensure that the `LANGUAGE_CODE` matches the language used in the provided episode information.
 - Set your TMDB account language preferences to match the `LANGUAGE_CODE`.
-- Ensure that the format of the provided episode information file matches the format specified in the script. The date format may vary depending on the language. For example, for Chinese, the date format is `YYYY/MM/DD` (e.g., `2023/1/20`), and for English, the date format is `MM/DD/YYYY` (e.g., `1/20/2023`). Please use the appropriate format based on your language.
+- Ensure that the format of the provided episode information file matches the format specified in the script. The date format may vary depending on the language. For example, for `Chinese`, the date format is `YYYY/MM/DD` (e.g., `2023/1/20`), and for `English`, the date format is `MM/DD/YYYY` (e.g., `1/20/2023`). Please use the appropriate format based on your language.
 - Follow the terms of use and regulations of the TMDB website while using the script.
 <br>
 
