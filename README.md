@@ -45,8 +45,8 @@
    - EPISODES_URL：您要添加剧集封面图片的网址。（例如：`https://www.themoviedb.org/tv/229116-dust/season/0/episode/1/images/backdrops`，可以是您要上传的季中任意一集的剧照页面）
    - IMAGE_FOLDER：您存储剧集封面图片的文件夹路径。（每次只能为单季添加封面图片，每集只能上传一张图片，图片请按集编号命名，文件夹内请只包含单季的图片）
    - LANGUAGE：您添加的封面图片的语言代码。（请以您设置的语言偏好为依据进行设置，例如：界面语言为 `汉语` 时，`汉语` 表示汉语，`英语` 表示英语；界面语言为 `English` 时，`Chinese` 表示汉语，`English` 表示英语。）
-3. 修改 `start.command (Mac)` 或 `start.bat (Win)` 中的路径，以指向您存放 `auto-add-covers.py` 脚本的目录。
-4. 双击运行 `start.command` 或 `start.bat` 脚本以执行 `auto-add-covers.py` 脚本。
+3. 修改 `start.command` 中的路径，以指向您存放 `auto-add-covers.py` 脚本的目录。
+4. 双击运行 `start.command` 脚本以执行 `auto-add-covers.py` 脚本。
 5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，并根据提供的剧集封面图片上传图片。脚本会按照数字从小到大的顺序上传提供的封面图片，如果上传失败，脚本将显示相应的提示信息，并继续处理下一个图片。当所有图片都处理完成后，脚本将显示成功上传的封面数和失败的封面数（如果有）。
 
 ### 注意事项
