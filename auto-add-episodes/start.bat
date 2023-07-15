@@ -1,5 +1,5 @@
 @echo off
 
-python /path/to/auto-add-episodes.py
+python C:\path\to\auto-add-episodes.py
 
 pause
