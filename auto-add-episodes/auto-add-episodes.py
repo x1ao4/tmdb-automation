@@ -21,7 +21,7 @@ try:
 
     driver.find_element(By.XPATH, '//*[@id="login_button"]').click()
 
-    with open(DATA_FILE, 'r') as file:
+    with open(DATA_FILE, 'r', encoding='utf-8') as file:
         data = file.readlines()
 
     driver.get(EPISODES_URL)
@@ -50,7 +50,7 @@ try:
                     data.remove(line)
                     break
 
-        with open(DATA_FILE, 'w') as file:
+        with open(DATA_FILE, 'w', encoding='utf-8') as file:
             for line in data:
                 file.write(line)
 
@@ -104,7 +104,7 @@ try:
             
             print(f'Successfully added episode: {episode_number}')
             data.remove(line)
-            with open(DATA_FILE, 'w') as file:
+            with open(DATA_FILE, 'w', encoding='utf-8') as file:
                 for line in data:
                     file.write(line)
 
@@ -116,7 +116,7 @@ try:
                 print(f'Failed to add episode: {episode_number}')
 
             
-    with open(DATA_FILE, 'w') as file:
+    with open(DATA_FILE, 'w', encoding='utf-8') as file:
         for line in data:
             file.write(line)
     
