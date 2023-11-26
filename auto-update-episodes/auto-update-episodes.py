@@ -29,7 +29,7 @@ try:
     except:
         pass
 
-    with open(DATA_FILE, 'r') as file:
+    with open(DATA_FILE, 'r', encoding='utf-8') as file:
         data = file.readlines()
 
     success_count = 0
@@ -66,7 +66,7 @@ try:
 
             # Remove the line from the remaining data and update the file
             remaining_data.remove(line)
-            with open(DATA_FILE, 'w') as file:
+            with open(DATA_FILE, 'w', encoding='utf-8') as file:
                 for line in remaining_data:
                     file.write(line)
 
