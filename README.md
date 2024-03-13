@@ -6,7 +6,7 @@
 ### 运行条件
 - 操作系统为 Windows、MacOS 或 Linux。
 - 安装了 Python 3.0 或更高版本。
-- 安装了必要的第三方库：selenium。
+- 安装了必要的第三方库：selenium。（可以通过 `pip3 install selenium` 安装）
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
 
@@ -35,7 +35,7 @@
 ### 运行条件
 - 操作系统为 MacOS。
 - 安装了 Python 3.0 或更高版本。
-- 安装了必要的第三方库：selenium。
+- 安装了必要的第三方库：selenium。（可以通过 `pip3 install selenium` 安装）
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
 
@@ -67,7 +67,7 @@
 ### 运行条件
 - 操作系统为 Windows、MacOS 或 Linux。
 - 安装了 Python 3.0 或更高版本。
-- 安装了必要的第三方库：selenium。
+- 安装了必要的第三方库：selenium。（可以通过 `pip3 install selenium` 安装）
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
 
@@ -100,7 +100,7 @@ tmdb-automation is a tool that automates the process of adding TV show episodes 
 ### Requirements
 - Operating system: Windows, MacOS, or Linux.
 - Installed Python 3.0 or higher.
-- Installed necessary third-party libraries: selenium.
+- Installed required third-party library: selenium. (Install with `pip3 install selenium`)
 - Installed Chrome browser and corresponding version of [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads).
 - A valid TMDB account.
 
@@ -129,7 +129,7 @@ tmdb-automation is a tool that automates the process of adding TV show episodes 
 ### Requirements
 - Operating system: MacOS.
 - Installed Python 3.0 or higher.
-- Installed necessary third-party libraries: selenium.
+- Installed required third-party library: selenium. (Install with `pip3 install selenium`)
 - Installed Chrome browser and corresponding version of [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads).
 - A valid TMDB account.
 
@@ -161,7 +161,7 @@ tmdb-automation is a tool that automates the process of adding TV show episodes 
 ### Requirements
 - Operating system: Windows, MacOS, or Linux.
 - Installed Python 3.0 or higher.
-- Installed necessary third-party libraries: selenium.
+- Installed required third-party library: selenium. (Install with `pip3 install selenium`)
 - Installed Chrome browser and corresponding version of [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads).
 - A valid TMDB account.
 
