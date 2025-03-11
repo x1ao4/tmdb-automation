@@ -78,7 +78,7 @@
    - TMDB_PASSWORD：您的 TMDB 用户密码。
    - EPISODES_URL：您要更新剧集的网址。（例如：`https://www.themoviedb.org/tv/201900/season/1/episode/1/edit?active_nav_item=primary_facts`，需要是具体某一季的集的编辑页面的完整地址）
    - DATA_FILE：您存储剧集信息的文本文件路径。（文本每一行代表一集的信息，需要包含五个由 `;` 分隔的字段，分别表示集编号、播出日期、时长、名字和分集剧情。例如：`336;2023/6/29;47;滑到他們的影片就停不下來！超可愛網紅小朋友們來啦！;小孩就是流量密碼？只要有小孩的影片流量就會高嗎？！今天製作單位就找來幾位「小朋友網紅」到現場，要看看他們到底是有什麼魔力能讓人如此著迷！`）
-   - LANGUAGE_CODE：您更新内容的语言代码。（例如：`zh-CN` 表示汉语，`en-US` 表示英语，以 TMDB 编辑页面显示的语言代码为准）
+   - LANGUAGE_CODE：您更新内容的语言代码。（例如：`zh_CN` 表示汉语，`en_US` 表示英语，以 TMDB 编辑页面显示的语言代码为准，注意需要将 `-` 改为 `_`。）
 3. 修改 `start.command (Mac)` 或 `start.bat (Win)` 中的路径，以指向您存放 `auto-update-episodes.py` 脚本的目录。
 4. 双击运行 `start.command` 或 `start.bat` 脚本以执行 `auto-update-episodes.py` 脚本。
 5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，并根据提供的剧集信息更新每一集的信息。当所有剧集信息都处理完成后，脚本将显示成功更新的剧集数和失败的剧集数（如果有）。
@@ -172,7 +172,7 @@ tmdb-automation is a tool that automates the process of adding TV show episodes 
    - TMDB_PASSWORD: Your TMDB password.
    - EPISODES_URL: The URL of the episode's edit page you want to update. (e.g., `https://www.themoviedb.org/tv/201900/season/1/episode/1/edit?active_nav_item=primary_facts`, needs to be the full address of the edit page of a specific season’s episode)
    - DATA_FILE: The path to the text file where you store episode information. (Each line of text represents one episode’s information, containing five fields separated by `;`, representing episode number, air date, duration, name and episode overview. For example: `53;6/28/2023;19;Fearfully Made;Sundered from his wife, Arthur's care falls to a machine.`）
-   - LANGUAGE_CODE: The language code for the content you are adding. (e.g., `zh-CN` for Chinese, `en-US` for English, based on the language code displayed on the TMDB edit page)
+   - LANGUAGE_CODE: The language code for the content you are adding. (e.g., `zh_CN` for Chinese, `en_US` for English, based on the language code displayed on the TMDB edit page, note that you need to change `-` to `_`.)
 3. Modify the path in `start.command (Mac)` or `start.bat (Win)` to point to the directory where you store the `auto-update-episodes.py` script.
 4. Double-click `start.command` or `start.bat` to execute the `auto-update-episodes.py` script.
 5. The script will automatically open a new Chrome browser window, log in to the TMDB website automatically, and update each episode according to the provided episode information. When all episode information has been processed, the script will display the number of episodes successfully updated and the number of failed episodes (if any).
