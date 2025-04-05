@@ -4,4 +4,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 cd "$DIR"
 
-python3 ./auto-add-covers.py
+python3 ./auto-add-backdrops.py

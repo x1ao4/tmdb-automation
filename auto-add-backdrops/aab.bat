@@ -4,6 +4,6 @@ set DIR=%~dp0
 
 cd /d %DIR%
 
-python3 auto-add-covers.py
+python3 auto-add-backdrops.py
 
 pause

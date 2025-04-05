@@ -1,140 +1,137 @@
+import os
+import time
+import configparser
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+from selenium.webdriver.common.action_chains import ActionChains
 
-TMDB_USERNAME = 'your_username'
-TMDB_PASSWORD = 'your_password'
-EPISODES_URL = 'https://www.themoviedb.org/tv/229116-dust/season/8/edit?active_nav_item=episodes'
-DATA_FILE = '/path/to/episodes.txt'
-LANGUAGE_CODE = 'en-US'
+# 读取配置文件
+SCRIPT_DIR = os.path.dirname(__file__)
+config = configparser.ConfigParser()
+config.read(os.path.join(SCRIPT_DIR, 'config.ini'), encoding='utf-8')
 
-try:
-    driver = webdriver.Chrome()
+TMDB_USERNAME = config.get('TMDB', 'USERNAME')
+TMDB_PASSWORD = config.get('TMDB', 'PASSWORD')
+EPISODES_URL = config.get('SHOW', 'EPISODES_URL')
+LANGUAGE_CODE = config.get('SHOW', 'LANGUAGE_CODE')
+DATA_FILE = os.path.join(SCRIPT_DIR, 'episodes.txt')
+
+# 启动 WebDriver
+driver = webdriver.Chrome()
+
+def login():
     driver.get('https://www.themoviedb.org/login')
-
     WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'username')))
-
     driver.find_element(By.ID, 'username').send_keys(TMDB_USERNAME)
     driver.find_element(By.ID, 'password').send_keys(TMDB_PASSWORD)
-
     driver.find_element(By.XPATH, '//*[@id="login_button"]').click()
+    
+    WebDriverWait(driver, 30).until(
+        EC.presence_of_element_located((By.XPATH, '//span[@class="avatar"]/a/img[@class="avatar"]'))
+    )
+
+def handle_cookie_popup():
+    """处理 Cookie 弹窗"""
+    try:
+        cookie_banner = WebDriverWait(driver, 2).until(
+            EC.presence_of_element_located((By.ID, "onetrust-banner-sdk"))
+        )
+        if cookie_banner.is_displayed():
+            driver.find_element(By.CLASS_NAME, "onetrust-close-btn-handler").click()
+            time.sleep(1)
+    except:
+        pass
+
+def add_episode(episode_number, date, duration, topic, description):
+    """添加剧集"""
+    driver.get(EPISODES_URL)
+    time.sleep(3)
+
+    # 获取已存在的剧集编号，避免重复添加
+    existing_episodes = [
+        int(e.text.strip()) for e in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]")
+    ]
+
+    if int(episode_number) in existing_episodes:
+        print(f"Episode {episode_number} already exists, skipping.")
+        return True
+
+    try:
+        # 点击 "新增新集数" 按钮
+        add_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.k-grid-add"))
+        )
+        ActionChains(driver).move_to_element(add_button).click().perform()
+
+        # 填写集数信息
+        episode_input = WebDriverWait(driver, 30).until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox input"))
+        )
+        episode_input.clear()
+        episode_input.send_keys(episode_number)
+
+        topic_input = WebDriverWait(driver, 30).until(
+            EC.visibility_of_element_located((By.ID, f"{LANGUAGE_CODE}_name_text_input_field"))
+        )
+        topic_input.send_keys(topic)
+
+        description_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_overview_text_box_field")
+        description_input.send_keys(description)
+
+        date_input = driver.find_element(By.ID, "air_date_date_picker_field")
+        date_input.clear()
+        date_input.send_keys(date)
+
+        duration_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_runtime_text_input_field")
+        duration_input.send_keys(duration)
+
+        save_button = driver.find_element(By.XPATH, "/html/body/div[16]/div[3]/button[1]")
+        driver.execute_script("arguments[0].click();", save_button)
+
+        print(f"Successfully added episode: {episode_number}")
+        time.sleep(3)
+        return True
+    except Exception as e:
+        print(f"Failed to add episode {episode_number}: {str(e)}")
+        return False
+
+
+def main():
+    """主流程"""
+    login()
+    handle_cookie_popup()
+
+    if not os.path.exists(DATA_FILE):
+        print("Data file not found.")
+        return
 
     with open(DATA_FILE, 'r', encoding='utf-8') as file:
         data = file.readlines()
 
-    driver.get(EPISODES_URL)
+    success_count = 0
+    remaining_data = data.copy()
 
-    time.sleep(3)
+    for line in data:
+        # 确保每行数据被正确分割
+        episode_number, date, duration, topic, description = line.strip().split(';', maxsplit=4)
 
-    existing_episode_numbers = []
-    for i in range(1, 1000):
-        xpath = f'//*[@id="grid"]/div[3]/table/tbody/tr[{i}]/td[1]'
-        episode_elements = driver.find_elements(By.XPATH, xpath)
-        if not episode_elements:
-            break
-        existing_episode_numbers.append(int(episode_elements[0].text))
-    
-    if not existing_episode_numbers:
-        filtered_data = data
-    else:
-        existing_episodes_in_file = [int(line.strip().split(';')[0]) for line in data]
-        common_episodes = list(set(existing_episode_numbers) & set(existing_episodes_in_file))
-        print(f'Episodes already exist: {common_episodes}')
-        print()
-        
-        for episode_number in common_episodes:
-            for line in data:
-                if line.startswith(f'{episode_number};'):
-                    data.remove(line)
-                    break
+        # 调用 add_episode 方法，逐条填写剧集信息
+        if add_episode(episode_number, date, duration, topic, description):
+            success_count += 1
+            remaining_data.remove(line)
 
-        with open(DATA_FILE, 'w', encoding='utf-8') as file:
-            for line in data:
-                file.write(line)
-
-        filtered_data = []
-        for line in data:
-            episode_number = int(line.strip().split(';')[0])
-            if episode_number not in existing_episode_numbers:
-                filtered_data.append(line)
-
-    successful_lines = []
-    failed_lines = []
-    
-    for index, line in enumerate(filtered_data):
-        try:
-            episode_number, date, duration, topic, description = line.strip().split(';', maxsplit=4)
-
-            driver.find_element(By.XPATH, '//*[@id="grid"]/div[1]/a').click()
-
-            WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, '.k-formatted-value')))
-
-            target_episode_number = int(episode_number)
-            current_episode_number = int(driver.find_element(By.CSS_SELECTOR, '.k-formatted-value').get_attribute('aria-valuenow'))
-            clicks_needed = target_episode_number - current_episode_number
-            if clicks_needed > 0:
-                for _ in range(clicks_needed):
-                    increase_button = driver.find_element(By.CSS_SELECTOR, '.k-link-increase')
-                    increase_button.click()
-            else:
-                for _ in range(abs(clicks_needed)):
-                    decrease_button = driver.find_element(By.CSS_SELECTOR, '.k-link-decrease')
-                    decrease_button.click()
-
-            driver.find_element(By.XPATH, f'//*[@id="{LANGUAGE_CODE}_name_text_input_field"]').send_keys(topic)
-            
-            time.sleep(1)
-            
-            driver.find_element(By.XPATH, f'//*[@id="{LANGUAGE_CODE}_overview_text_box_field"]').send_keys(description)
-
-            air_date_field = driver.find_element(By.XPATH, '//*[@id="air_date_date_picker_field"]')
-            air_date_field.clear()
-            air_date_field.send_keys(date)
-
-            driver.find_element(By.XPATH, f'//*[@id="{LANGUAGE_CODE}_runtime_text_input_field"]').send_keys(duration)
-
-            save_button = driver.find_element(By.CLASS_NAME, 'k-grid-update')
-            save_button.click()
-
-            time.sleep(2)
-
-            successful_lines.append(index)
-            
-            print(f'Successfully added episode: {episode_number}')
-            data.remove(line)
+            # 更新文件，防止重复添加
             with open(DATA_FILE, 'w', encoding='utf-8') as file:
-                for line in data:
-                    file.write(line)
+                file.writelines(remaining_data)
 
-        except Exception as e:
-            error_message = str(e).split('\n')[0]
-            failed_lines.append(index)
-            
-            if index != 0:
-                print(f'Failed to add episode: {episode_number}')
+    print(f'\nTotal episodes added: {success_count}')
 
-            
-    with open(DATA_FILE, 'w', encoding='utf-8') as file:
-        for line in data:
-            file.write(line)
-    
-    print()
-    
-    print(f'Total added: {len(successful_lines)}')
-    print(f'Total failed: {len(failed_lines)}')
-    
-    if failed_lines:
-        failed_episodes_str = 'Failed episodes:'
-        for index in failed_lines:
-            line = filtered_data[index]
-            episode_number = line.strip().split(';')[0]
-            failed_episodes_str += f' {episode_number}'
-        print()
-        print(failed_episodes_str)
-
-except Exception as e:
-    print(f'Unknown error')
-
-driver.quit()
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        print(f'Error: {e}')
+    finally:
+        driver.quit()
