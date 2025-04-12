@@ -84,7 +84,7 @@ def main():
             with open(DATA_FILE, 'w', encoding='utf-8') as file:
                 for entry in remaining_data:
                     file.write(entry)
-            print(f'Successfully updated episode: {episode_number}')
+            print(f'Successfully updated episode {episode_number}')
         else:
             failure_count += 1
     

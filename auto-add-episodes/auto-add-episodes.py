@@ -33,7 +33,6 @@ def login():
     )
 
 def handle_cookie_popup():
-    """处理 Cookie 弹窗"""
     try:
         cookie_banner = WebDriverWait(driver, 2).until(
             EC.presence_of_element_located((By.ID, "onetrust-banner-sdk"))
@@ -45,61 +44,178 @@ def handle_cookie_popup():
         pass
 
 def add_episode(episode_number, date, duration, topic, description):
-    """添加剧集"""
     driver.get(EPISODES_URL)
     time.sleep(3)
 
-    # 获取已存在的剧集编号，避免重复添加
     existing_episodes = [
         int(e.text.strip()) for e in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]")
     ]
 
     if int(episode_number) in existing_episodes:
-        print(f"Episode {episode_number} already exists, skipping.")
         return True
 
     try:
-        # 点击 "新增新集数" 按钮
         add_button = WebDriverWait(driver, 30).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button.k-grid-add"))
         )
-        ActionChains(driver).move_to_element(add_button).click().perform()
-
-        # 填写集数信息
-        episode_input = WebDriverWait(driver, 30).until(
-            EC.visibility_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox input"))
-        )
-        episode_input.clear()
-        episode_input.send_keys(episode_number)
+        add_button.click()
+        time.sleep(3)
 
         topic_input = WebDriverWait(driver, 30).until(
             EC.visibility_of_element_located((By.ID, f"{LANGUAGE_CODE}_name_text_input_field"))
         )
+        topic_input.clear()
         topic_input.send_keys(topic)
 
         description_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_overview_text_box_field")
+        description_input.clear()
         description_input.send_keys(description)
-
-        date_input = driver.find_element(By.ID, "air_date_date_picker_field")
-        date_input.clear()
-        date_input.send_keys(date)
+        
+        try:
+            date_picker_input = driver.find_element(By.ID, "air_date_date_picker_field")
+            driver.execute_script("arguments[0].value = '';", date_picker_input)
+            time.sleep(0.5)
+            
+            ActionChains(driver)\
+                .click(date_picker_input)\
+                .key_down(webdriver.Keys.CONTROL)\
+                .send_keys('a')\
+                .key_up(webdriver.Keys.CONTROL)\
+                .send_keys(webdriver.Keys.DELETE)\
+                .send_keys(date)\
+                .perform()
+            time.sleep(0.5)
+            
+            driver.execute_script("""
+                arguments[0].value = arguments[1];
+                arguments[0].dispatchEvent(new Event('input', {bubbles:true}));
+                arguments[0].dispatchEvent(new Event('change', {bubbles:true}));
+                arguments[0].dispatchEvent(new Event('blur', {bubbles:true}));
+            """, date_picker_input, date)
+            time.sleep(1)
+        except Exception:
+            pass
 
         duration_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_runtime_text_input_field")
+        duration_input.clear()
         duration_input.send_keys(duration)
 
-        save_button = driver.find_element(By.XPATH, "/html/body/div[16]/div[3]/button[1]")
-        driver.execute_script("arguments[0].click();", save_button)
+        try:
+            numeric_container = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox"))
+            )
+            
+            try:
+                current_episode = driver.execute_script("""
+                    var numericContainer = document.querySelector('.k-numerictextbox');
+                    if (numericContainer) {
+                        var input = numericContainer.querySelector('input');
+                        if (input) {
+                            return parseInt(input.value) || 0;
+                        }
+                    }
+                    return 0;
+                """)
+                
+                target_episode = int(episode_number)
+                
+                if current_episode > target_episode:
+                    clicks_needed = current_episode - target_episode
+                    button_selector = ".k-spinner-decrease"
+                else:
+                    clicks_needed = target_episode - current_episode
+                    button_selector = ".k-spinner-increase"
+                
+                if clicks_needed > 0:
+                    button = numeric_container.find_element(By.CSS_SELECTOR, button_selector)
+                    for _ in range(clicks_needed):
+                        button.click()
+                        time.sleep(0.05)
+            except Exception:
+                try:
+                    down_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-decrease")
+                    up_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-increase")
+                    
+                    for _ in range(20):
+                        down_button.click()
+                        time.sleep(0.05)
+                    
+                    target_clicks = int(episode_number) - 1
+                    for _ in range(target_clicks):
+                        up_button.click()
+                        time.sleep(0.05)
+                except Exception:
+                    pass
+            
+            driver.execute_script("""
+                var numericContainer = document.querySelector('.k-numerictextbox');
+                if (numericContainer) {
+                    try {
+                        if (window.kendo && window.jQuery) {
+                            var kendoWidget = window.jQuery(numericContainer).data("kendoNumericTextBox");
+                            if (kendoWidget) {
+                                kendoWidget.value(arguments[0]);
+                                kendoWidget.trigger("change");
+                                return;
+                            }
+                        }
+                    } catch(e) {}
+                    
+                    var allInputs = numericContainer.querySelectorAll('input');
+                    for (var i = 0; i < allInputs.length; i++) {
+                        allInputs[i].value = arguments[0];
+                        allInputs[i].dispatchEvent(new Event('change', { bubbles: true }));
+                        allInputs[i].dispatchEvent(new Event('blur', { bubbles: true }));
+                    }
+                }
+            """, episode_number)
+            
+        except Exception:
+            pass
 
-        print(f"Successfully added episode: {episode_number}")
-        time.sleep(3)
-        return True
+        try:
+            save_button = driver.find_element(By.CSS_SELECTOR, "button[ref-update-button]")
+            save_button.click()
+            time.sleep(3)
+            print(f"Successfully added episode {episode_number}")
+            return True
+        except Exception:
+            try:
+                # 不使用文本内容，改用通用的CSS选择器找到保存按钮
+                # 尝试几种常见的保存按钮选择器
+                save_selectors = [
+                    ".k-grid-update",  # Kendo UI常用的保存按钮类
+                    "button.k-button.k-primary",  # 主要按钮通常是保存
+                    "form button[type='submit']",  # 表单提交按钮
+                    ".edit-buttons button:last-child",  # 编辑按钮组中的最后一个按钮通常是保存
+                    ".k-edit-buttons button:last-child",  # Kendo编辑按钮组
+                    ".modal-footer button.k-primary",  # 模态框中的主要按钮
+                ]
+                
+                for selector in save_selectors:
+                    buttons = driver.find_elements(By.CSS_SELECTOR, selector)
+                    if buttons:
+                        buttons[0].click()
+                        time.sleep(3)
+                        print(f"Successfully added episode {episode_number}")
+                        return True
+                
+                # 如果上述方法都失败，尝试查找form元素并提交
+                forms = driver.find_elements(By.TAG_NAME, "form")
+                if forms:
+                    driver.execute_script("arguments[0].submit();", forms[0])
+                    time.sleep(3)
+                    print(f"Successfully added episode {episode_number}")
+                    return True
+                
+                return False
+            except Exception:
+                return False
     except Exception as e:
         print(f"Failed to add episode {episode_number}: {str(e)}")
         return False
 
-
 def main():
-    """主流程"""
     login()
     handle_cookie_popup()
 
@@ -114,19 +230,16 @@ def main():
     remaining_data = data.copy()
 
     for line in data:
-        # 确保每行数据被正确分割
         episode_number, date, duration, topic, description = line.strip().split(';', maxsplit=4)
 
-        # 调用 add_episode 方法，逐条填写剧集信息
         if add_episode(episode_number, date, duration, topic, description):
             success_count += 1
             remaining_data.remove(line)
 
-            # 更新文件，防止重复添加
             with open(DATA_FILE, 'w', encoding='utf-8') as file:
                 file.writelines(remaining_data)
 
-    print(f'\nTotal episodes added: {success_count}')
+    print(f'\nTotal added: {success_count}')
 
 if __name__ == "__main__":
     try:
