@@ -27,7 +27,7 @@ def login():
     driver.find_element(By.ID, 'username').send_keys(TMDB_USERNAME)
     driver.find_element(By.ID, 'password').send_keys(TMDB_PASSWORD)
     driver.find_element(By.XPATH, '//*[@id="login_button"]').click()
-    
+
     WebDriverWait(driver, 30).until(
         EC.presence_of_element_located((By.XPATH, '//span[@class="avatar"]/a/img[@class="avatar"]'))
     )
@@ -52,6 +52,7 @@ def add_episode(episode_number, date, duration, topic, description):
     ]
 
     if int(episode_number) in existing_episodes:
+        print(f"Episode {episode_number} already exists")
         return True
 
     try:
@@ -70,22 +71,22 @@ def add_episode(episode_number, date, duration, topic, description):
         description_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_overview_text_box_field")
         description_input.clear()
         description_input.send_keys(description)
-        
+
         try:
             date_picker_input = driver.find_element(By.ID, "air_date_date_picker_field")
             driver.execute_script("arguments[0].value = '';", date_picker_input)
             time.sleep(0.5)
-            
-            ActionChains(driver)\
-                .click(date_picker_input)\
-                .key_down(webdriver.Keys.CONTROL)\
-                .send_keys('a')\
-                .key_up(webdriver.Keys.CONTROL)\
-                .send_keys(webdriver.Keys.DELETE)\
-                .send_keys(date)\
-                .perform()
+
+            ActionChains(driver) \
+               .click(date_picker_input) \
+               .key_down(webdriver.Keys.CONTROL) \
+               .send_keys('a') \
+               .key_up(webdriver.Keys.CONTROL) \
+               .send_keys(webdriver.Keys.DELETE) \
+               .send_keys(date) \
+               .perform()
             time.sleep(0.5)
-            
+
             driver.execute_script("""
                 arguments[0].value = arguments[1];
                 arguments[0].dispatchEvent(new Event('input', {bubbles:true}));
@@ -104,7 +105,7 @@ def add_episode(episode_number, date, duration, topic, description):
             numeric_container = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox"))
             )
-            
+
             try:
                 current_episode = driver.execute_script("""
                     var numericContainer = document.querySelector('.k-numerictextbox');
@@ -116,16 +117,16 @@ def add_episode(episode_number, date, duration, topic, description):
                     }
                     return 0;
                 """)
-                
+
                 target_episode = int(episode_number)
-                
+
                 if current_episode > target_episode:
                     clicks_needed = current_episode - target_episode
                     button_selector = ".k-spinner-decrease"
                 else:
                     clicks_needed = target_episode - current_episode
                     button_selector = ".k-spinner-increase"
-                
+
                 if clicks_needed > 0:
                     button = numeric_container.find_element(By.CSS_SELECTOR, button_selector)
                     for _ in range(clicks_needed):
@@ -135,18 +136,18 @@ def add_episode(episode_number, date, duration, topic, description):
                 try:
                     down_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-decrease")
                     up_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-increase")
-                    
+
                     for _ in range(20):
                         down_button.click()
                         time.sleep(0.05)
-                    
+
                     target_clicks = int(episode_number) - 1
                     for _ in range(target_clicks):
                         up_button.click()
                         time.sleep(0.05)
                 except Exception:
                     pass
-            
+
             driver.execute_script("""
                 var numericContainer = document.querySelector('.k-numerictextbox');
                 if (numericContainer) {
@@ -160,7 +161,7 @@ def add_episode(episode_number, date, duration, topic, description):
                             }
                         }
                     } catch(e) {}
-                    
+
                     var allInputs = numericContainer.querySelectorAll('input');
                     for (var i = 0; i < allInputs.length; i++) {
                         allInputs[i].value = arguments[0];
@@ -169,7 +170,7 @@ def add_episode(episode_number, date, duration, topic, description):
                     }
                 }
             """, episode_number)
-            
+
         except Exception:
             pass
 
@@ -191,7 +192,7 @@ def add_episode(episode_number, date, duration, topic, description):
                     ".k-edit-buttons button:last-child",  # Kendo编辑按钮组
                     ".modal-footer button.k-primary",  # 模态框中的主要按钮
                 ]
-                
+
                 for selector in save_selectors:
                     buttons = driver.find_elements(By.CSS_SELECTOR, selector)
                     if buttons:
@@ -199,7 +200,7 @@ def add_episode(episode_number, date, duration, topic, description):
                         time.sleep(3)
                         print(f"Successfully added episode {episode_number}")
                         return True
-                
+
                 # 如果上述方法都失败，尝试查找form元素并提交
                 forms = driver.find_elements(By.TAG_NAME, "form")
                 if forms:
@@ -207,9 +208,11 @@ def add_episode(episode_number, date, duration, topic, description):
                     time.sleep(3)
                     print(f"Successfully added episode {episode_number}")
                     return True
-                
+
+                print(f"Failed to add episode {episode_number}")
                 return False
             except Exception:
+                print(f"Failed to add episode {episode_number}")
                 return False
     except Exception as e:
         print(f"Failed to add episode {episode_number}: {str(e)}")
@@ -227,6 +230,7 @@ def main():
         data = file.readlines()
 
     success_count = 0
+    failure_count = 0
     remaining_data = data.copy()
 
     for line in data:
@@ -238,8 +242,11 @@ def main():
 
             with open(DATA_FILE, 'w', encoding='utf-8') as file:
                 file.writelines(remaining_data)
+        else:
+            failure_count += 1
 
     print(f'\nTotal added: {success_count}')
+    print(f'Total failed: {failure_count}')
 
 if __name__ == "__main__":
     try:
@@ -248,3 +255,4 @@ if __name__ == "__main__":
         print(f'Error: {e}')
     finally:
         driver.quit()
+    
