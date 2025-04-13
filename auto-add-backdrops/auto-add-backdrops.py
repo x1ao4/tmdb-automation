@@ -83,7 +83,7 @@ try:
         try:
             error_message = driver.find_element(By.CSS_SELECTOR, '.error_message')
             failure_count += 1
-            print(f'Failed to upload cover for episode {episode_number}: {error_message.text}')
+            print(f'Failed to upload backdrop for episode {episode_number}: {error_message.text}')
             
             close_button = driver.find_element(By.XPATH, '//button[@aria-label="Close"]')
             close_button.click()
@@ -98,7 +98,7 @@ try:
         except:
             success_count += 1
             os.remove(image_path)
-            print(f'Successfully uploaded cover for episode {episode_number}')
+            print(f'Successfully uploaded backdrop for episode {episode_number}')
         
         driver.refresh()
 
