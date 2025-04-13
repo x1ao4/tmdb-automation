@@ -1,25 +1,46 @@
-# tmdb-automation
-使用 tmdb-automation 可以利用 selenium 通过网页自动化实现自动向 TMDB 添加剧集信息和封面图片。由于 TMDB 不支持通过 API 向网站添加内容，所以我选择了使用 selenium 来实现这个功能。tmdb-automation 共包含三个脚本，auto-add-episodes 可以用来添加剧集，auto-add-covers 可以用来添加剧集封面，auto-update-episodes 可以用来更新（修改）剧集信息。
+# TMDB Automation <a name="tmdb-automation-zh"></a>
+<a href="#tmdb-automation-en">Switch to English</a>
+
+使用 TMDB Automation 可以利用 selenium 通过网页自动化实现自动向 TMDB 添加剧集信息和图片。由于 TMDB 不支持通过 API 向网站添加内容，所以我选择了使用 selenium 来实现这个功能。TMDB Automation 共包含三个工具，Auto Add Episodes 可以用来添加剧集信息，Auto Add Backdrops 可以用来添加剧照图片，Auto Update Episodes 可以用来更新（修改）剧集信息。
 <br>
 <br>
-## auto-add-episodes
+## Auto Add Episodes
 ### 运行条件
 - 操作系统为 Windows、MacOS 或 Linux。
 - 安装了 Python 3.0 或更高版本。
-- 安装了必要的第三方库：selenium。（可以通过 `pip3 install selenium` 安装）
+- 使用命令 `pip3 install -r requirements.txt` 安装了必要的第三方库。
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
+- 按要求整理好了需要添加的剧集信息。
+
+### 配置说明
+在使用 Auto Add Episodes 前，请先参考以下提示（示例）对 `config.ini` 进行配置。
+```
+[TMDB]
+# 你的 TMDB 用户名
+USERNAME = YOUR_TMDB_USERNAME
+# 你的 TMDB 用户密码
+PASSWORD = YOUR_TMDB_PASSWORD
+
+[SHOW]
+# 你要添加的电视节目的剧集所属季的编辑页面的集数编辑页面的网址，如下方示例
+EPISODES_URL = https://www.themoviedb.org/tv/201900/season/1/edit?active_nav_item=episodes
+# 你要添加的剧集信息的语言，如 zh-CN 表示汉语，en-US 表示英语，以 TMDB 使用的语言代码为准
+LANGUAGE_CODE = zh-TW
+```
+
+请将要添加的剧集信息按照 `集编号;播出日期;时长;名字;分集剧情` 的顺序整理（每行代表一集）并保存为 `/auto-add-episodes/episodes.txt`。
+```
+1;2011/12/4;45;国歌;备受爱戴的苏珊娜公主遭人绑架，这让首相麦克尔·凯罗陷入了可怕的两难境地。
+2;2011/12/11;62;一千五百万点;一位女士未能在歌唱比赛中受到评委的青睐，她必须做出选择，进行有辱人格的表演还是回到奴隶般的生活状态。
+3;2011/12/18;50;你的人生;在不久的将来，每个人都可以使用一种记忆植入装置，了解人类做过、看过和听过的所有事情。
+```
 
 ### 使用方法
-1. 将仓库克隆或下载到计算机上的一个目录中。
-2. 根据需要，修改脚本中的参数：`TMDB_USERNAME`、`TMDB_PASSWORD`、`EPISODES_URL`、`DATA_FILE` 和 `LANGUAGE_CODE`。
-   - TMDB_USERNAME：您的 TMDB 用户名。
-   - TMDB_PASSWORD：您的 TMDB 用户密码。
-   - EPISODES_URL：您要添加剧集的网址。（例如：`https://www.themoviedb.org/tv/229116-dust/season/8/edit?active_nav_item=episodes`，需要是具体某一季的集的编辑页面的完整地址）
-   - DATA_FILE：您存储剧集信息的文本文件路径。（文本每一行代表一集的信息，需要包含五个由 `;` 分隔的字段，分别表示集编号、播出日期、时长、名字和分集剧情。例如：`336;2023/6/29;47;滑到他們的影片就停不下來！超可愛網紅小朋友們來啦！;小孩就是流量密碼？只要有小孩的影片流量就會高嗎？！今天製作單位就找來幾位「小朋友網紅」到現場，要看看他們到底是有什麼魔力能讓人如此著迷！`）
-   - LANGUAGE_CODE：您添加内容的语言代码。（例如：`zh-CN` 表示汉语，`en-US` 表示英语，以 TMDB 编辑页面显示的语言代码为准）
-3. 修改 `start.command (Mac)` 或 `start.bat (Win)` 中的路径，以指向您存放 `auto-add-episodes.py` 脚本的目录。
-4. 双击运行 `start.command` 或 `start.bat` 脚本以执行 `auto-add-episodes.py` 脚本。
+1. 通过 [Releases](https://github.com/x1ao4/tmdb-automation/releases) 下载最新版本的压缩包并解压到本地目录中。
+2. 用记事本或文本编辑打开目录中的 `/auto-add-episodes/config.ini` 文件，填写你的 TMDB 用户名（`USERNAME`）、用户密码（`PASSWORD`）以及你要添加的剧集的相关信息。
+3. 将整理好的剧集信息按要求保存在 `/auto-add-episodes/episodes.txt` 文件内。
+4. 双击 `aae.bat`（Windows）或 `aae.command`（Mac）即可启动 Auto Add Episodes。
 5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，并根据提供的剧集信息添加新的剧集。若提供的剧集信息中有已经存在于 TMDB 上的剧集，脚本将跳过这些剧集并显示相应的提示信息，然后继续添加其他剧集。当所有剧集信息都处理完成后，脚本将显示成功添加的剧集数和失败的剧集数（如果有）。
 
 ### 注意事项
