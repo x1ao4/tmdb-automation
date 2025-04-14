@@ -13,7 +13,7 @@
 - 按要求整理好了需要添加的剧集信息。
 
 ### 配置说明
-在使用 Auto Add Episodes 前，请先参考以下提示（示例）对 `config.ini` 进行配置。
+在使用 Auto Add Episodes 前，请先参考以下提示（示例）对 `/auto-add-episodes/config.ini` 进行配置。
 ```
 [TMDB]
 # 你的 TMDB 用户名
@@ -23,9 +23,9 @@ PASSWORD = YOUR_TMDB_PASSWORD
 
 [SHOW]
 # 你要添加的电视节目的剧集所属季的编辑页面的集数编辑页面的网址，如下方示例
-EPISODES_URL = https://www.themoviedb.org/tv/201900/season/1/edit?active_nav_item=episodes
+EPISODES_URL = https://www.themoviedb.org/tv/42009-black-mirror/season/1/edit?active_nav_item=episodes
 # 你要添加的剧集信息的语言，如 zh-CN 表示汉语，en-US 表示英语，以 TMDB 使用的语言代码为准
-LANGUAGE_CODE = zh-TW
+LANGUAGE_CODE = zh-CN
 ```
 
 请将要添加的剧集信息按照 `集编号;播出日期;时长;名字;分集剧情` 的顺序整理（每行代表一集）并保存为 `/auto-add-episodes/episodes.txt`。
@@ -40,14 +40,17 @@ LANGUAGE_CODE = zh-TW
 2. 用记事本或文本编辑打开目录中的 `/auto-add-episodes/config.ini` 文件，填写你的 TMDB 用户名（`USERNAME`）、用户密码（`PASSWORD`）以及你要添加的剧集的相关信息。
 3. 将整理好的剧集信息按要求保存在 `/auto-add-episodes/episodes.txt` 文件内。
 4. 双击 `aae.bat`（Windows）或 `aae.command`（Mac）即可启动 Auto Add Episodes。
-5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，并根据提供的剧集信息添加新的剧集。若提供的剧集信息中有已经存在于 TMDB 上的剧集，脚本将跳过这些剧集并显示相应的提示信息，然后继续添加其他剧集。当所有剧集信息都处理完成后，脚本将显示成功添加的剧集数和失败的剧集数。
+5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，根据提供的剧集信息自动添加新的剧集，并在控制台显示处理结果。在所有剧集信息都处理完成后，打开的 Chrome 浏览器窗口将自动关闭，控制台会显示统计信息然后结束运行。
 
 ### 注意事项
 - 使用脚本时，请确保你的网络连接正常，并且 TMDB 网站可以正常访问。
 - 请确保你的 TMDB 帐户拥有足够的权限执行相关操作。
 - 请确保设置的 `LANGUAGE_CODE` 与你提供的剧集信息的语言一致。
 - 请确保 TMDB 账户的「语言偏好设置」中的「网站界面的默认语言」与你设置的 `LANGUAGE_CODE` 一致。
-- 请确保你按照要求整理了剧集信息。不同的语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时日期格式为 `YYYY/MM/DD` 如 `2023/1/20`，当语言为 `英语` 时日期格式为 `MM/DD/YYYY` 如 `1/20/2023`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式。
+- 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时日期格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时日期格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
+- 若提供的剧集信息中包含已经存在于 TMDB 上的剧集，脚本将跳过这些剧集并在控制台显示相应的提示信息，然后继续添加其他剧集。
+- 脚本将自动从 `/auto-add-episodes/episodes.txt` 文件内删除已成功添加的剧集的剧集信息，建议运行脚本前先做好备份。
+- 脚本运行时，请勿操作键盘和鼠标，以免引发错误。
 - 使用脚本时，请遵守 TMDB 网站的使用条款和规定，以确保合法合规。
 <br>
 
