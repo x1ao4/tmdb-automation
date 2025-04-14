@@ -6,7 +6,7 @@
 <br>
 ## Auto Add Episodes
 ### 运行条件
-- 安装了 Python 3.0 或更高版本。
+- 安装了 Python 3.9 或更高版本。
 - 使用命令 `pip3 install -r requirements.txt` 安装了必要的第三方库。
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
@@ -49,40 +49,53 @@ LANGUAGE_CODE = zh-CN
 - 请确保 TMDB 账户的「语言偏好设置」中的「网站界面的默认语言」与你设置的 `LANGUAGE_CODE` 一致。
 - 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时日期格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时日期格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
 - 若提供的剧集信息中包含已经存在于 TMDB 上的剧集，脚本将跳过这些剧集并在控制台显示相应的提示信息，然后继续添加其他剧集。
-- 脚本将自动从 `/auto-add-episodes/episodes.txt` 文件内删除已成功添加的剧集的剧集信息，建议运行脚本前先做好备份。
+- 脚本将自动从 `/auto-add-episodes/episodes.txt` 文件内删除已成功添加的剧集信息，建议运行脚本前先做好备份。
 - 脚本运行时，请勿操作键盘和鼠标，以免引发错误。
 - 使用脚本时，请遵守 TMDB 网站的使用条款和规定，以确保合法合规。
 <br>
 
-## auto-add-covers
+## Auto Add Backdrops
 ### 运行条件
-- 操作系统为 MacOS。
-- 安装了 Python 3.0 或更高版本。
-- 安装了必要的第三方库：selenium。（可以通过 `pip3 install selenium` 安装）
+- 安装了 Python 3.9 或更高版本。
+- 使用命令 `pip3 install -r requirements.txt` 安装了必要的第三方库。
 - 安装了 Chrome 浏览器和对应版本的 [ChromeDriver](https://sites.google.com/chromium.org/driver/downloads)。
 - 有可用的 TMDB 账号。
+- 按要求整理好了需要添加的剧集图片（剧照）。
+
+### 配置说明
+在使用 Auto Add Backdrops 前，请先参考以下提示（示例）对 `/auto-add-backdrops/config.ini` 进行配置。
+```
+[TMDB]
+# 你的 TMDB 用户名
+USERNAME = YOUR_TMDB_USERNAME
+# 你的 TMDB 用户密码
+PASSWORD = YOUR_TMDB_PASSWORD
+
+[SHOW]
+# 你要添加的电视节目的剧集图片（剧照）所属季的任意一集的剧照页面的网址，如下方示例
+EPISODE_URL = https://www.themoviedb.org/tv/42009-black-mirror/season/1/episode/1/images/backdrops
+# 你要添加的剧集图片的语言，根据你的 TMDB 账户的语言偏好进行设置，如网站界面的默认语言为 `汉语` 时，`汉语` 表示汉语，`英语` 表示英语；默认语言为 `English` 时，`Chinese` 表示汉语，`English` 表示英语
+LANGUAGE = 汉语
+```
+
+请使用 `集编号` 为你要添加的剧集图片（剧照）命名（如 `1.jpg`、`2.jpg` 和 `3.jpg` 分别代表第一集、第二集和第三集的剧照），并保存在 `/auto-add-backdrops/backdrops` 文件夹内。
 
 ### 使用方法
-1. 将仓库克隆或下载到计算机上的一个目录中。
-2. 根据需要，修改脚本中的参数：`TMDB_USERNAME`、`TMDB_PASSWORD`、`EPISODES_URL`、`IMAGE_FOLDER` 和 `LANGUAGE`。
-   - TMDB_USERNAME：您的 TMDB 用户名。
-   - TMDB_PASSWORD：您的 TMDB 用户密码。
-   - EPISODES_URL：您要添加剧集封面图片的网址。（例如：`https://www.themoviedb.org/tv/229116-dust/season/0/episode/1/images/backdrops`，可以是您要添加的季中任意一集的剧照页面）
-   - IMAGE_FOLDER：您存储剧集封面图片的文件夹路径。（每次只能为单季添加封面图片，每集只能上传一张图片，图片请按集编号命名，文件夹内请只包含单季的图片）
-   - LANGUAGE：您添加的封面图片的语言代码。（请以您设置的语言偏好为依据进行设置，例如：界面语言为 `汉语` 时，`汉语` 表示汉语，`英语` 表示英语；界面语言为 `English` 时，`Chinese` 表示汉语，`English` 表示英语。）
-3. 修改 `start.command` 中的路径，以指向您存放 `auto-add-covers.py` 脚本的目录。
-4. 双击运行 `start.command` 脚本以执行 `auto-add-covers.py` 脚本。
-5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，并根据提供的剧集封面图片上传图片。脚本会按照数字从小到大的顺序上传提供的封面图片，如果上传失败，脚本将显示相应的提示信息，并继续处理下一个图片。当所有图片都处理完成后，脚本将显示成功上传的封面数和失败的封面数（如果有）。
+1. 通过 [Releases](https://github.com/x1ao4/tmdb-automation/releases) 下载最新版本的压缩包并解压到本地目录中。
+2. 用记事本或文本编辑打开目录中的 `/auto-add-backdrops/config.ini` 文件，填写你的 TMDB 用户名（`USERNAME`）、用户密码（`PASSWORD`）以及你要添加的剧集图片的相关信息。
+3. 将整理好的剧集图片按要求保存在 `/auto-add-backdrops/backdrops` 文件夹内。
+4. 双击 `aab.bat`（Windows）或 `aab.command`（Mac）即可启动 Auto Add Backdrops。
+5. 脚本会自动打开新的 Chrome 浏览器窗口，自动登录到 TMDB 网站，根据提供的剧集图片自动为对应的剧集上传图片，并在控制台显示处理结果。在所有剧集图片都处理完成后，打开的 Chrome 浏览器窗口将自动关闭，控制台会显示统计信息然后结束运行。
 
 ### 注意事项
-- 请确保您拥有合法的 TMDB 帐户，并且具有足够的权限执行所需的操作。
-- 使用脚本时，请确保您的网络连接正常，并且 TMDB 网站可以正常访问。
-- 请确保设置的 `LANGUAGE` 与您提供的封面图片语言一致。
-- 请确保设置 `LANGUAGE` 时使用的语言与您的 TMDB 界面语言相匹配。
-- 请确保提供的剧集封面图片是按集编号命名的，并以 `.jpg` 作为文件扩展名。
-- 请确保脚本运行时输入法的语言为英语，且用到的文件夹或文件名称及目录只包含英语，不可以包含其他语言的字符或特殊字符。
-- 使用脚本时，请关闭所有使用 `Shift` 键为快捷键的应用程序，或将快捷键设置为其他键，以免运行时触发其他进程，影响脚本正常运行。
-- 使用脚本时，请勿对屏幕进行任何操作，以免中断脚本运行。
+- 使用脚本时，请确保你的网络连接正常，并且 TMDB 网站可以正常访问。
+- 请确保你的 TMDB 帐户拥有足够的权限执行相关操作。
+- 请确保设置的 `LANGUAGE` 与你提供的剧集图片的语言一致，若图片上没有文字，请设置为 `No Language`。
+- 请确保 TMDB 账户的「语言偏好设置」中的「网站界面的默认语言」与你设置的 `LANGUAGE` 一致。
+- 请确保你按照要求整理了剧集图片。请将剧集图片保存为 `jpg` 或 `jpeg` 格式，其他格式可能不受支持。请将剧集图片裁剪为 `16:9` 的比例，其他比例可能不受支持。
+- 无论剧集图片对应的剧集是否已经存在剧集图片，脚本始终都会上传你提供的图片。
+- 脚本将自动从 `/auto-add-backdrops/backdrops` 文件夹内删除已成功添加的剧集图片，建议运行脚本前先做好备份。
+- 脚本运行时，请勿操作键盘和鼠标，以免引发错误。
 - 使用脚本时，请遵守 TMDB 网站的使用条款和规定，以确保合法合规。
 <br>
 
