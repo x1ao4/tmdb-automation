@@ -1,7 +1,7 @@
 # TMDB Automation <a name="tmdb-automation-zh"></a>
 <a href="#tmdb-automation-en">Switch to English</a>
 
-使用 TMDB Automation 可以利用 Selenium 通过网页自动化实现自动向 [TMDB](https://www.themoviedb.org/) 添加剧集信息和图片。由于 TMDB 不支持通过 API 向网站添加内容，所以我选择了使用 Selenium 来实现这个功能。TMDB Automation 共包含三个工具，Auto Add Episodes 可以用来添加剧集信息，Auto Add Backdrops 可以用来添加剧集图片（剧照），Auto Update Episodes 可以用来更新（修改）剧集信息。
+使用 TMDB Automation 可以利用 Selenium 通过网页自动化实现自动向 [TMDB](https://www.themoviedb.org/) 添加剧集信息和图片。由于 TMDB 不支持通过 API 向网站添加内容，所以我选择了使用 Selenium 来实现这个功能。TMDB Automation 共包含三个工具，Auto Add Episodes 可以用来添加剧集信息，Auto Add Backdrops 可以用来添加剧集图片（剧照），Auto Update Episodes 可以用来更新（修改）已存在的剧集信息。
 <br>
 <br>
 ## Auto Add Episodes
@@ -47,7 +47,7 @@ LANGUAGE_CODE = zh-CN
 - 请确保你的 TMDB 帐户拥有足够的权限执行相关操作。
 - 请确保设置的 `LANGUAGE_CODE` 与你提供的剧集信息的语言一致。
 - 请确保 TMDB 账户的 `语言偏好设置` 中的 `网站界面的默认语言` 与你设置的 `LANGUAGE_CODE` 一致。
-- 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时日期格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时日期格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
+- 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
 - 若提供的剧集信息中包含已经存在于 TMDB 上的剧集，脚本将跳过这些剧集并在控制台显示相应的提示信息，然后继续添加其他剧集。
 - 脚本将自动从 `/auto-add-episodes/episodes.txt` 文件中删除已成功添加的剧集信息，建议运行脚本前先做好备份。
 - 脚本运行时，请勿操作键盘和鼠标，以免引发错误。
@@ -144,7 +144,7 @@ LANGUAGE_CODE = zh_CN
 - 请确保你的 TMDB 帐户拥有足够的权限执行相关操作。
 - 请确保设置的 `LANGUAGE_CODE` 与你提供的剧集信息的语言一致。
 - 请确保 TMDB 账户的 `语言偏好设置` 中的 `网站界面的默认语言` 与你设置的 `LANGUAGE_CODE` 一致。
-- 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时日期格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时日期格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
+- 请确保你按照要求整理了剧集信息。不同语言对 `播出日期` 的格式要求可能不同，当语言为 `汉语` 时格式为 `YYYY/MM/DD` 如 `2025/1/20`，当语言为 `英语` 时格式为 `MM/DD/YYYY` 如 `1/20/2025`，请根据你的语言使用对应的格式，或者使用 `YYYY-MM-DD` 格式 如 `2025-1-20`。
 - 脚本仅支持对已存在于 TMDB 上的剧集的信息进行更新（修改）。
 - 脚本将自动从 `/auto-update-episodes/episodes.txt` 文件中删除已成功更新的剧集信息，建议运行脚本前先做好备份。
 - 脚本运行时，请勿操作键盘和鼠标，以免引发错误。
@@ -185,7 +185,7 @@ USERNAME = YOUR_TMDB_USERNAME
 PASSWORD = YOUR_TMDB_PASSWORD
 
 [SHOW]
-# The edit URL of the season’s episode list on TMDB
+# The edit page URL for the season’s episode list on TMDB
 EPISODES_URL = https://www.themoviedb.org/tv/42009-black-mirror/season/1/edit?active_nav_item=episodes
 # Language code of the episode info, e.g., zh-CN for Chinese, en-US for English (use TMDB language codes)
 LANGUAGE_CODE = en-US
@@ -236,7 +236,7 @@ USERNAME = YOUR_TMDB_USERNAME
 PASSWORD = YOUR_TMDB_PASSWORD
 
 [SHOW]
-# The backdrop page URL for any episode in the season
+# The backdrop page URL for any episode in the season on TMDB
 EPISODE_URL = https://www.themoviedb.org/tv/42009-black-mirror/season/1/episode/1/images/backdrops
 # The language of the backdrops. Set it based on your TMDB account’s default language: use 汉语/英语 if default is 汉语, or Chinese/English if default is English
 LANGUAGE = English
@@ -282,7 +282,7 @@ USERNAME = YOUR_TMDB_USERNAME
 PASSWORD = YOUR_TMDB_PASSWORD
 
 [SHOW]
-# The edit page URL for any episode in the season
+# The edit page URL for any episode in the season on TMDB
 EPISODE_URL = https://www.themoviedb.org/tv/42009-black-mirror/season/1/episode/1/edit?active_nav_item=primary_facts
 # Language code of the episode info, e.g., zh_CN for Chinese, en_US for English (use TMDB language codes with - replaced by _)
 LANGUAGE_CODE = en_US
