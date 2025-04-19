@@ -319,4 +319,4 @@ If you found this helpful, consider buying me a coffee or giving it a ⭐️. Th
 
 <img width="383" alt="Support" src="https://github.com/user-attachments/assets/bdd2226b-6282-439d-be92-5311b6e9d29c">
 <br><br>
-<a href="#tmdb-automation-zh">Back to Top</a>
+<a href="#tmdb-automation-en">Back to Top</a>
