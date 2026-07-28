@@ -48,7 +48,7 @@ def add_episode(episode_number, date, duration, topic, description):
     time.sleep(3)
 
     existing_episodes = [
-        int(e.text.strip()) for e in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]")
+        int(e.text.strip().replace(',', '')) for e in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]")
     ]
 
     if int(episode_number) in existing_episodes:
@@ -105,48 +105,6 @@ def add_episode(episode_number, date, duration, topic, description):
             numeric_container = WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox"))
             )
-
-            try:
-                current_episode = driver.execute_script("""
-                    var numericContainer = document.querySelector('.k-numerictextbox');
-                    if (numericContainer) {
-                        var input = numericContainer.querySelector('input');
-                        if (input) {
-                            return parseInt(input.value) || 0;
-                        }
-                    }
-                    return 0;
-                """)
-
-                target_episode = int(episode_number)
-
-                if current_episode > target_episode:
-                    clicks_needed = current_episode - target_episode
-                    button_selector = ".k-spinner-decrease"
-                else:
-                    clicks_needed = target_episode - current_episode
-                    button_selector = ".k-spinner-increase"
-
-                if clicks_needed > 0:
-                    button = numeric_container.find_element(By.CSS_SELECTOR, button_selector)
-                    for _ in range(clicks_needed):
-                        button.click()
-                        time.sleep(0.05)
-            except Exception:
-                try:
-                    down_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-decrease")
-                    up_button = numeric_container.find_element(By.CSS_SELECTOR, ".k-spinner-increase")
-
-                    for _ in range(20):
-                        down_button.click()
-                        time.sleep(0.05)
-
-                    target_clicks = int(episode_number) - 1
-                    for _ in range(target_clicks):
-                        up_button.click()
-                        time.sleep(0.05)
-                except Exception:
-                    pass
 
             driver.execute_script("""
                 var numericContainer = document.querySelector('.k-numerictextbox');
