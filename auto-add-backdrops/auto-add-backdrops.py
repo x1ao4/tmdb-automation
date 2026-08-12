@@ -22,9 +22,9 @@ TV_SHOW_URL = match.group(1) + '{episode_number}/images/backdrops'
 
 # 新版 TMDB 上传弹窗选择器
 UPLOAD_MODAL_SELECTOR = '#image_upload_modal'
-FILE_INPUT_SELECTOR = '#image_upload_modal .cropper_file_input input[type="file"]'
+FILE_INPUT_SELECTOR = '#image_upload_modal #upload_files'
 FILE_ITEM_SELECTOR = '#file_list .cropper_file_item'
-CROP_CONTROLS_SELECTOR = '#crop_controls'
+IMAGE_CONTROLS_SELECTOR = '#image_controls'
 UPLOAD_BUTTON_SELECTOR = '#btn_crop_upload'
 MODAL_CLOSE_SELECTOR = '#image_upload_modal .modal_close'
 
@@ -42,25 +42,45 @@ def handle_cookie_popup():
         pass
 
 
-def close_upload_modal():
-    """关闭上传弹窗（上传成功后会自动刷新页面）"""
+def is_upload_modal_visible():
+    """检查上传弹窗是否可见"""
     try:
         modal = driver.find_element(By.CSS_SELECTOR, UPLOAD_MODAL_SELECTOR)
-        if 'hidden' in (modal.get_attribute('class') or ''):
-            return
+        return 'hidden' not in (modal.get_attribute('class') or '')
+    except Exception:
+        return False
 
-        driver.find_element(By.CSS_SELECTOR, MODAL_CLOSE_SELECTOR).click()
 
-        # 上传成功后关闭弹窗会触发 location.reload()，等待页面重新加载完成
-        WebDriverWait(driver, 30).until(EC.staleness_of(modal))
+def close_upload_modal():
+    """关闭上传弹窗（上传成功后会自动刷新页面）"""
+    if not is_upload_modal_visible():
+        return
+
+    # 上传成功后 imageUploadModalDirty=true，关闭时会触发 location.reload()
+    upload_succeeded = driver.execute_script(
+        'return typeof imageUploadModalDirty !== "undefined" && imageUploadModalDirty'
+    )
+
+    # 调用页面原生关闭函数，确保正确触发 reload 逻辑
+    driver.execute_script("""
+        if (typeof closeImageUploadModal === 'function') {
+            closeImageUploadModal();
+        } else {
+            document.querySelector('#image_upload_modal .modal_close')?.click();
+        }
+    """)
+
+    if upload_succeeded:
+        # 等待页面刷新完成
         WebDriverWait(driver, 30).until(
             lambda d: d.execute_script('return document.readyState') == 'complete'
         )
         WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.CLASS_NAME, 'k-input-button'))
+            EC.presence_of_element_located((By.CLASS_NAME, 'k-input-button'))
         )
-    except Exception:
-        pass
+    else:
+        # 未上传时仅隐藏弹窗，元素仍留在 DOM 中
+        WebDriverWait(driver, 10).until(lambda d: not is_upload_modal_visible())
 
 
 def wait_for_file_ready(timeout=20):
@@ -87,26 +107,44 @@ def get_file_error_message():
     return None
 
 
-def wait_for_crop_controls(timeout=15):
-    """等待裁剪控件显示，必要时点击文件项"""
-    controls = driver.find_element(By.CSS_SELECTOR, CROP_CONTROLS_SELECTOR)
+def is_auto_upload_enabled():
+    """检查是否启用了自动上传"""
+    try:
+        checkbox = driver.find_element(By.CSS_SELECTOR, '#auto_upload')
+        return checkbox.is_selected()
+    except Exception:
+        return True
+
+
+def wait_for_image_controls(timeout=15):
+    """等待裁剪控件显示（手动上传模式），必要时点击文件项"""
+    controls = WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, IMAGE_CONTROLS_SELECTOR))
+    )
     if 'hidden' in (controls.get_attribute('class') or ''):
         driver.find_element(By.CSS_SELECTOR, FILE_ITEM_SELECTOR).click()
 
     WebDriverWait(driver, timeout).until(
-        lambda d: 'hidden' not in (d.find_element(By.CSS_SELECTOR, CROP_CONTROLS_SELECTOR).get_attribute('class') or '')
+        lambda d: 'hidden' not in (
+            d.find_element(By.CSS_SELECTOR, IMAGE_CONTROLS_SELECTOR).get_attribute('class') or ''
+        )
     )
 
 
-def wait_for_upload_complete(timeout=60):
+def wait_for_upload_complete(timeout=120):
     """等待单张图片上传完成（文件状态变为 Uploaded）"""
     def upload_done(d):
-        for status in d.find_elements(By.CSS_SELECTOR, '#file_list .file_status'):
+        statuses = d.find_elements(By.CSS_SELECTOR, '#file_list .file_status')
+        if not statuses:
+            return False
+
+        for status in statuses:
             status_class = status.get_attribute('class') or ''
-            if 'success' in status_class:
-                return True
+            status_text = status.text.strip()
             if 'error' in status_class:
-                raise RuntimeError(status.text.strip() or 'Upload failed')
+                raise RuntimeError(status_text or 'Upload failed')
+            if 'success' in status_class or status_text == 'Uploaded':
+                return True
         return False
 
     WebDriverWait(driver, timeout).until(upload_done)
@@ -132,14 +170,17 @@ def upload_backdrop(image_path):
     if error_message:
         raise RuntimeError(error_message)
 
-    wait_for_crop_controls()
+    # 启用 Auto upload 时，选文件后会自动上传，无需手动点击裁剪按钮
+    if is_auto_upload_enabled():
+        wait_for_upload_complete()
+    else:
+        wait_for_image_controls()
+        upload_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, UPLOAD_BUTTON_SELECTOR))
+        )
+        upload_button.click()
+        wait_for_upload_complete()
 
-    upload_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, UPLOAD_BUTTON_SELECTOR))
-    )
-    upload_button.click()
-
-    wait_for_upload_complete()
     close_upload_modal()
 
 
