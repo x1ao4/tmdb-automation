@@ -23,10 +23,10 @@ driver = webdriver.Chrome()
 
 def login():
     driver.get('https://www.themoviedb.org/login')
-    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'username')))
-    driver.find_element(By.ID, 'username').send_keys(TMDB_USERNAME)
-    driver.find_element(By.ID, 'password').send_keys(TMDB_PASSWORD)
-    driver.find_element(By.XPATH, '//*[@id="login_button"]').click()
+    WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.ID, 'auth_username')))
+    driver.find_element(By.ID, 'auth_username').send_keys(TMDB_USERNAME)
+    driver.find_element(By.ID, 'auth_password').send_keys(TMDB_PASSWORD)
+    driver.find_element(By.ID, 'auth_login_button').click()
 
     WebDriverWait(driver, 30).until(
         EC.presence_of_element_located((By.XPATH, '//span[@class="avatar"]/a/img[@class="avatar"]'))
