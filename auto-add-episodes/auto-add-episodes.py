@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import configparser
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -102,35 +103,71 @@ def add_episode(episode_number, date, duration, topic, description):
         duration_input.send_keys(duration)
 
         try:
-            numeric_container = WebDriverWait(driver, 10).until(
+            WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".k-numerictextbox"))
             )
-
-            driver.execute_script("""
-                var numericContainer = document.querySelector('.k-numerictextbox');
-                if (numericContainer) {
-                    try {
-                        if (window.kendo && window.jQuery) {
-                            var kendoWidget = window.jQuery(numericContainer).data("kendoNumericTextBox");
-                            if (kendoWidget) {
-                                kendoWidget.value(arguments[0]);
-                                kendoWidget.trigger("change");
-                                return;
-                            }
-                        }
-                    } catch(e) {}
-
-                    var allInputs = numericContainer.querySelectorAll('input');
-                    for (var i = 0; i < allInputs.length; i++) {
-                        allInputs[i].value = arguments[0];
-                        allInputs[i].dispatchEvent(new Event('change', { bubbles: true }));
-                        allInputs[i].dispatchEvent(new Event('blur', { bubbles: true }));
-                    }
-                }
-            """, episode_number)
-
         except Exception:
             pass
+
+        # 集数是 Kendo NumericTextBox：组件实例挂在带 data-role 的隐藏原始 input 上，
+        # 且必须用 kendo 自带的 jQuery 获取（window.jQuery 与之不是同一实例）。
+        # 直接改 input.value 只会更新页面显示，保存提交的仍是模型里自动生成的集数，
+        # 因此必须走组件 API 设值，并在保存前回读模型校验。
+        set_result = {}
+        try:
+            set_result = json.loads(driver.execute_script("""
+                var target = arguments[0];
+                var result = { widget_set: false, model_value: null };
+
+                var container = document.querySelector('.k-numerictextbox');
+                var boundInput = container ? container.querySelector('input[data-role="numerictextbox"]') : null;
+                if (!boundInput) {
+                    boundInput = document.getElementById('episode_number_numeric_text_box_field');
+                }
+                var kendojq = (window.kendo && window.kendo.jQuery) ? window.kendo.jQuery : null;
+
+                var widget = null;
+                if (kendojq && boundInput) {
+                    widget = kendojq(boundInput).data('kendoNumericTextBox');
+                }
+                if (!widget && kendojq && container) {
+                    widget = kendojq(container).data('kendoNumericTextBox');
+                }
+                if (!widget && window.jQuery && container) {
+                    widget = window.jQuery(container).data('kendoNumericTextBox');
+                }
+
+                if (widget) {
+                    widget.value(target);
+                    widget.trigger('change');
+                    result.widget_set = true;
+                }
+
+                try {
+                    var formEl = document.querySelector('.k-edit-form-container');
+                    if (formEl && kendojq) {
+                        var form = kendojq(formEl).data('kendoForm');
+                        if (form && form.options && form.options.formData) {
+                            result.model_value = form.options.formData.episode_number;
+                        }
+                    }
+                } catch (e) {}
+
+                return JSON.stringify(result);
+            """, episode_number) or '{}')
+        except Exception:
+            pass
+
+        if not set_result.get('widget_set'):
+            print(f"Failed to set episode number for episode {episode_number}: Kendo widget not found, skipping save to avoid a wrong episode number")
+            return False
+
+        model_value = set_result.get('model_value')
+        if model_value is not None and int(model_value) != int(episode_number):
+            print(f"Failed to set episode number for episode {episode_number}: form model still holds {model_value}, skipping save")
+            return False
+        if model_value is None:
+            print(f"Warning: episode number {episode_number} was set via Kendo API, but the form model could not be verified")
 
         try:
             save_button = driver.find_element(By.CSS_SELECTOR, "button[ref-update-button]")
