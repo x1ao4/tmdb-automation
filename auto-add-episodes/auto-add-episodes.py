@@ -6,7 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import TimeoutException
 
 # 读取配置文件
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -44,28 +44,148 @@ def handle_cookie_popup():
     except:
         pass
 
+def wait_for_grid_loaded(timeout=90, settle=0.8):
+    """等待分集表格把数据取回并渲染完成，返回数据源里的集数（超时返回 None）。
+
+    编辑页是 Kendo Grid：工具栏的「新增新集數」按钮在 HTML 里一早就存在，
+    但表格数据是异步加载的。若在 dataBound 之前点它，弹窗会先打开、随后被表格
+    重新渲染冲掉，表现出来就是「弹窗打开了却填不进内容」。所以必须先等表格稳定。
+    """
+    script = """
+        var jq = (window.kendo && window.kendo.jQuery) ? window.kendo.jQuery : window.jQuery;
+        var grid = null;
+        if (jq) {
+            grid = jq('#grid').data('kendoGrid') || jq('.k-grid').first().data('kendoGrid');
+        }
+        var domRows = document.querySelectorAll('table tbody tr').length;
+        var active = window.jQuery ? window.jQuery.active : 0;
+        if (!grid) { return [domRows, domRows, false, active]; }
+        return [grid.dataSource.data().length, domRows, true, active];
+    """
+    deadline = time.time() + timeout
+    last = None
+    stable_since = time.time()
+    while time.time() < deadline:
+        state = driver.execute_script(script)
+        # 表格实例已就绪，且数据行数稳定、没有还在跑的 jQuery 异步请求
+        if state[2] and state[3] == 0:
+            if state != last:
+                last = state
+                stable_since = time.time()
+            elif time.time() - stable_since >= settle:
+                return last[0]
+        else:
+            last = None
+        time.sleep(0.2)
+    # 超时仍没读到表格：返回 None，调用方应中止而不是当成「一集都没有」继续添加
+    return None
+
+def open_add_dialog(retries=3):
+    """点击「新增新集數」并确认弹窗真的留住了，返回是否成功。"""
+    for attempt in range(1, retries + 1):
+        add_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.k-grid-add"))
+        )
+        add_button.click()
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.visibility_of_element_located((By.ID, f"{LANGUAGE_CODE}_name_text_input_field"))
+            )
+            # 再等半秒：如果表格这时才 dataBound，弹窗会被冲掉，这里能发现
+            time.sleep(0.5)
+            if driver.find_elements(By.CSS_SELECTOR, ".k-edit-form-container"):
+                return True
+        except TimeoutException:
+            pass
+        print(f"Add dialog did not stay open (attempt {attempt}/{retries}), retrying")
+        time.sleep(1)
+    return False
+
+def set_air_date(date):
+    """用 Kendo DatePicker 组件 API 写入上映日期，并回读表单模型。
+
+    直接改 input.value（或 dispatch input/change）只改页面显示：DatePicker 内部的
+    值不变，表单模型里的 air_date 仍是页面预填的日期（一般是上一集 +7 天），
+    保存时提交的就是那个预填值 —— 日期不对时会被静默写错。
+    """
+    iso_date = date.replace('/', '-')
+    return json.loads(driver.execute_script("""
+        var out = { widget: false, applied: false, model: '', input: '' };
+        var jq = (window.kendo && window.kendo.jQuery) ? window.kendo.jQuery : window.jQuery;
+        var el = document.getElementById('air_date_date_picker_field');
+        if (!el) { return JSON.stringify(out); }
+
+        // TMDB 的模型里 air_date 是字符串：预填是 yyyy-MM-dd，
+        // 用户点日历选中后是 Date.toString() 的形式，两种都要能归一化成 yyyy-MM-dd
+        function toIso(v) {
+            if (!v) { return ''; }
+            if (typeof v === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(v)) { return v; }
+            var d = (v instanceof Date) ? v : new Date(v);
+            if (isNaN(d.getTime())) { return ''; }
+            var mm = ('0' + (d.getMonth() + 1)).slice(-2);
+            var dd = ('0' + d.getDate()).slice(-2);
+            return d.getFullYear() + '-' + mm + '-' + dd;
+        }
+
+        var picker = null;
+        if (jq) {
+            picker = jq(el).data('kendoDatePicker');
+            if (!picker && el.parentNode) { picker = jq(el.parentNode).data('kendoDatePicker'); }
+        }
+        if (picker) {
+            out.widget = true;
+            var parsed = kendo.parseDate(arguments[0], 'yyyy-MM-dd');
+            if (parsed) {
+                picker.value(parsed);
+                picker.trigger('change');
+                out.applied = true;
+            }
+        }
+
+        var formEl = document.querySelector('.k-edit-form-container');
+        var form = (jq && formEl) ? jq(formEl).data('kendoForm') : null;
+        if (form && form.options && form.options.formData) {
+            out.model = toIso(form.options.formData.air_date);
+        }
+        out.input = el.value;
+        return JSON.stringify(out);
+    """, iso_date) or '{}')
+
 def add_episode(episode_number, date, duration, topic, description):
     driver.get(EPISODES_URL)
-    time.sleep(3)
 
-    existing_episodes = [
-        int(e.text.strip().replace(',', '')) for e in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]")
-    ]
+    # 必须先等表格加载完：否则既读不到已存在的集数（重复检查失效），
+    # 点新增也会被随后到来的 dataBound 冲掉
+    if wait_for_grid_loaded() is None:
+        print(f"Failed to add episode {episode_number}: the episode table never finished loading")
+        return False
+
+    # 从表格数据源一次读全部集数：逐格取 text 要一千多次 WebDriver 往返（实测 12s+）
+    existing_episodes = driver.execute_script("""
+        var jq = (window.kendo && window.kendo.jQuery) ? window.kendo.jQuery : window.jQuery;
+        var grid = jq ? (jq('#grid').data('kendoGrid') || jq('.k-grid').first().data('kendoGrid')) : null;
+        if (!grid) { return null; }
+        return grid.dataSource.data().map(function (row) { return row.episode_number; });
+    """)
+    if existing_episodes is None:
+        # 拿不到数据源时退回读单元格（慢，但能兜底）
+        existing_episodes = []
+        for cell in driver.find_elements(By.XPATH, "//table/tbody/tr/td[1]"):
+            text = cell.text.strip().replace(',', '')
+            if text.isdigit():
+                existing_episodes.append(int(text))
+    existing_episodes = [int(number) for number in existing_episodes if number is not None]
 
     if int(episode_number) in existing_episodes:
         print(f"Episode {episode_number} already exists")
         return True
 
     try:
-        add_button = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.k-grid-add"))
-        )
-        add_button.click()
-        time.sleep(3)
+        if not open_add_dialog():
+            print(f"Failed to add episode {episode_number}: the add dialog never stayed open")
+            return False
 
-        topic_input = WebDriverWait(driver, 30).until(
-            EC.visibility_of_element_located((By.ID, f"{LANGUAGE_CODE}_name_text_input_field"))
-        )
+        topic_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_name_text_input_field")
         topic_input.clear()
         topic_input.send_keys(topic)
 
@@ -73,30 +193,17 @@ def add_episode(episode_number, date, duration, topic, description):
         description_input.clear()
         description_input.send_keys(description)
 
-        try:
-            date_picker_input = driver.find_element(By.ID, "air_date_date_picker_field")
-            driver.execute_script("arguments[0].value = '';", date_picker_input)
-            time.sleep(0.5)
-
-            ActionChains(driver) \
-               .click(date_picker_input) \
-               .key_down(webdriver.Keys.CONTROL) \
-               .send_keys('a') \
-               .key_up(webdriver.Keys.CONTROL) \
-               .send_keys(webdriver.Keys.DELETE) \
-               .send_keys(date) \
-               .perform()
-            time.sleep(0.5)
-
-            driver.execute_script("""
-                arguments[0].value = arguments[1];
-                arguments[0].dispatchEvent(new Event('input', {bubbles:true}));
-                arguments[0].dispatchEvent(new Event('change', {bubbles:true}));
-                arguments[0].dispatchEvent(new Event('blur', {bubbles:true}));
-            """, date_picker_input, date)
-            time.sleep(1)
-        except Exception:
-            pass
+        iso_date = date.replace('/', '-')
+        date_result = set_air_date(date)
+        if date_result.get('widget'):
+            if date_result.get('model') and date_result['model'] != iso_date:
+                print(f"Failed to set air date for episode {episode_number}: form model holds {date_result['model']}, expected {iso_date}, skipping save")
+                return False
+            if not date_result.get('applied'):
+                print(f"Failed to set air date for episode {episode_number}: date picker rejected {iso_date}, skipping save")
+                return False
+        else:
+            print(f"Warning: air date picker widget not found for episode {episode_number}, the air date may not be submitted")
 
         duration_input = driver.find_element(By.ID, f"{LANGUAGE_CODE}_runtime_text_input_field")
         duration_input.clear()
@@ -169,46 +276,28 @@ def add_episode(episode_number, date, duration, topic, description):
         if model_value is None:
             print(f"Warning: episode number {episode_number} was set via Kendo API, but the form model could not be verified")
 
+        save_buttons = driver.find_elements(By.CSS_SELECTOR, "button[ref-update-button]")
+        if not save_buttons:
+            # 只在弹窗内找主要按钮，避免点到弹窗外的其它 primary 按钮或取消按钮
+            save_buttons = driver.find_elements(By.CSS_SELECTOR, ".k-window button.k-button-primary")
+        if not save_buttons:
+            print(f"Failed to add episode {episode_number}: save button not found")
+            return False
+
+        save_buttons[-1].click()
+
+        # 保存成功后弹窗会关闭；没关闭说明没存进去（校验不通过等），
+        # 此时不能报成功，否则 episodes.txt 里这行会被删掉，数据就丢了
         try:
-            save_button = driver.find_element(By.CSS_SELECTOR, "button[ref-update-button]")
-            save_button.click()
-            time.sleep(3)
-            print(f"Successfully added episode {episode_number}")
-            return True
-        except Exception:
-            try:
-                # 不使用文本内容，改用通用的CSS选择器找到保存按钮
-                # 尝试几种常见的保存按钮选择器
-                save_selectors = [
-                    ".k-grid-update",  # Kendo UI常用的保存按钮类
-                    "button.k-button.k-primary",  # 主要按钮通常是保存
-                    "form button[type='submit']",  # 表单提交按钮
-                    ".edit-buttons button:last-child",  # 编辑按钮组中的最后一个按钮通常是保存
-                    ".k-edit-buttons button:last-child",  # Kendo编辑按钮组
-                    ".modal-footer button.k-primary",  # 模态框中的主要按钮
-                ]
+            WebDriverWait(driver, 30).until(
+                EC.invisibility_of_element_located((By.CSS_SELECTOR, ".k-edit-form-container"))
+            )
+        except TimeoutException:
+            print(f"Failed to add episode {episode_number}: edit dialog is still open after saving, keeping the data for retry")
+            return False
 
-                for selector in save_selectors:
-                    buttons = driver.find_elements(By.CSS_SELECTOR, selector)
-                    if buttons:
-                        buttons[0].click()
-                        time.sleep(3)
-                        print(f"Successfully added episode {episode_number}")
-                        return True
-
-                # 如果上述方法都失败，尝试查找form元素并提交
-                forms = driver.find_elements(By.TAG_NAME, "form")
-                if forms:
-                    driver.execute_script("arguments[0].submit();", forms[0])
-                    time.sleep(3)
-                    print(f"Successfully added episode {episode_number}")
-                    return True
-
-                print(f"Failed to add episode {episode_number}")
-                return False
-            except Exception:
-                print(f"Failed to add episode {episode_number}")
-                return False
+        print(f"Successfully added episode {episode_number}")
+        return True
     except Exception as e:
         print(f"Failed to add episode {episode_number}: {str(e)}")
         return False
