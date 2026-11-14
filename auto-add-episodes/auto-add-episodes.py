@@ -2,6 +2,7 @@ import os
 import time
 import json
 import configparser
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -101,6 +102,15 @@ def open_add_dialog(retries=3):
         time.sleep(1)
     return False
 
+def normalize_date(date):
+    """把数据文件里的日期归一化成补零的 yyyy-MM-dd。
+
+    数据文件里是 2026/11/5 这种不补零的写法，而 Kendo 表单模型回读的
+    air_date 经 toIso 处理后一定是补零格式（2026-11-05）。保存前的校验
+    比较两边，格式不一致会永远不相等，导致每一集都被误判为设值失败。
+    """
+    return datetime.strptime(date.replace('/', '-'), '%Y-%m-%d').date().isoformat()
+
 def set_air_date(date):
     """用 Kendo DatePicker 组件 API 写入上映日期，并回读表单模型。
 
@@ -193,8 +203,8 @@ def add_episode(episode_number, date, duration, topic, description):
         description_input.clear()
         description_input.send_keys(description)
 
-        iso_date = date.replace('/', '-')
-        date_result = set_air_date(date)
+        iso_date = normalize_date(date)
+        date_result = set_air_date(iso_date)
         if date_result.get('widget'):
             if date_result.get('model') and date_result['model'] != iso_date:
                 print(f"Failed to set air date for episode {episode_number}: form model holds {date_result['model']}, expected {iso_date}, skipping save")
